@@ -1,0 +1,591 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cuentas del PGC · Juego de tarjetas</title>
+<style>
+:root{
+  --ink:#1b2430;--muted:#5b6675;--line:#d9dfe7;--bg:#f5f7fa;--card:#fff;--accent:#1f4e8c;--accent-d:#163a6a;
+  --a:#1d5fa8;--a-bg:#e8f1fb;--p:#b45309;--p-bg:#fdf0e0;--n:#6d3fb2;--n-bg:#f1eafb;--g:#b42318;--g-bg:#fdecea;--i:#1b7a43;--i-bg:#e6f6ec;
+  --ok:#1b7a43;--ok-bg:#e6f6ec;--bad:#b42318;--bad-bg:#fdecea;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+#app{max-width:860px;margin:0 auto;padding:16px}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,select:focus-visible,.card:focus-visible,summary:focus-visible{outline:3px solid #8db6ea;outline-offset:2px}
+header h1{margin:0;font-size:1.5rem;line-height:1.2}
+header p{margin:.25rem 0 0;color:var(--muted);font-size:.95rem}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 16px}
+.tab{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 14px;font-weight:600;font-size:.95rem}
+.tab[aria-current="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+.btn{border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:10px;padding:9px 16px;font-weight:600}
+.btn:hover{background:var(--accent-d)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.sec{background:#fff;color:var(--accent)}
+.btn.sec:hover{background:#eef3fa}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row.center{justify-content:center}
+.spread{justify-content:space-between}
+.muted{color:var(--muted)}
+.small{font-size:.88rem}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:4px 11px;font-size:.88rem}
+.chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+
+/* tarjeta */
+.cardwrap{perspective:1200px;margin:6px 0 14px}
+.card{display:grid;cursor:pointer;transform-style:preserve-3d;transition:transform .45s;position:relative}
+.card.flipped{transform:rotateY(180deg)}
+.face{grid-area:1/1;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:16px;border:2px solid var(--line);background:#fff;padding:22px}
+.front{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:300px;gap:6px}
+.back{transform:rotateY(180deg)}
+.code{font-size:4rem;font-weight:800;letter-spacing:.02em;line-height:1}
+.cname{font-size:1.35rem;font-weight:600;max-width:30ch}
+.hint{margin-top:14px;color:var(--muted);font-size:.85rem}
+.k-a{border-color:var(--a);background:var(--a-bg)} .k-a .code{color:var(--a)}
+.k-p{border-color:var(--p);background:var(--p-bg)} .k-p .code{color:var(--p)}
+.k-n{border-color:var(--n);background:var(--n-bg)} .k-n .code{color:var(--n)}
+.k-g{border-color:var(--g);background:var(--g-bg)} .k-g .code{color:var(--g)}
+.k-i{border-color:var(--i);background:var(--i-bg)} .k-i .code{color:var(--i)}
+.badge{display:inline-block;border-radius:999px;padding:2px 10px;font-size:.8rem;font-weight:700;border:1px solid currentColor;background:#fff}
+.b-a{color:var(--a)}.b-p{color:var(--p)}.b-n{color:var(--n)}.b-g{color:var(--g)}.b-i{color:var(--i)}
+.toggle{display:flex;gap:8px;align-items:flex-start;font-size:.88rem;margin:-4px 0 14px;color:var(--muted)}.toggle input{margin-top:3px;width:16px;height:16px}
+.extb{color:#555;border-color:#aab;font-weight:600}
+.trapb{background:#fff6d6;color:#7a5600;border-color:#d9a900}
+.bhead{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin-bottom:10px}
+.bhead .code{font-size:2rem}
+.bhead b{font-size:1.1rem}
+dl.facts{margin:0;display:grid;grid-template-columns:auto 1fr;gap:5px 12px}
+dl.facts dt{color:var(--muted);font-size:.88rem}
+dl.facts dd{margin:0;font-weight:600}
+.dc{display:grid;gap:8px;margin-top:12px}
+.dc div{border-radius:10px;padding:8px 12px;font-size:.93rem;background:#fff;border:1px solid var(--line)}
+.dc b{display:block;font-size:.8rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.note{margin-top:10px;border-radius:10px;padding:9px 12px;font-size:.92rem;background:#fff6d6;border:1px solid #e7c85a;color:#5d4500}
+.tip{margin-top:10px;border-radius:10px;padding:9px 12px;font-size:.92rem;background:#e8f1fb;border:1px solid #b9d2f0;color:#143a68}
+
+/* preguntas */
+.q{border:1px solid var(--line);border-radius:14px;padding:18px;background:#fff}
+.qtitle{display:flex;gap:14px;align-items:center;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.qtitle .code{font-size:2.4rem;color:var(--accent)}
+.qtitle .cname{font-size:1.15rem}
+.field{margin:0 0 14px}
+.field>.lab{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-weight:700;font-size:.92rem;margin-bottom:6px}
+.field .ans{font-weight:600;font-size:.85rem;color:var(--bad)}
+.field .ans.good{color:var(--ok)}
+.opts{display:flex;flex-wrap:wrap;gap:8px}
+.opts.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}
+.opt{border:2px solid var(--line);background:#fff;border-radius:10px;padding:8px 12px;text-align:left;font-size:.93rem}
+.opt:hover:not(:disabled){border-color:#8db6ea;background:#f3f8fe}
+.opt[aria-pressed="true"]{border-color:var(--accent);background:#e3edfa;font-weight:700}
+.opt.ok{border-color:var(--ok);background:var(--ok-bg);color:#0f5a2f;font-weight:700}
+.opt.bad{border-color:var(--bad);background:var(--bad-bg);color:#8a1a11}
+.opt:disabled{cursor:default}
+select{font:inherit;padding:8px 10px;border-radius:10px;border:2px solid var(--line);width:100%;max-width:100%;background:#fff}
+select.ok{border-color:var(--ok);background:var(--ok-bg)} select.bad{border-color:var(--bad);background:var(--bad-bg)}
+.fb{margin-top:14px;border-radius:12px;padding:12px 14px;border:1px solid var(--line);background:#fafbfc}
+.fb.good{border-color:#9fd6b5;background:var(--ok-bg)} .fb.fail{border-color:#f0b5af;background:var(--bad-bg)}
+.fb h3{margin:0 0 6px;font-size:1rem}
+.bar{height:10px;background:#e6ebf1;border-radius:999px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);transition:width .3s}
+.stats{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:12px}
+.stat b{display:block;font-size:1.5rem;line-height:1.1}
+.stat span{font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.boxes{display:grid;gap:6px;margin:12px 0 16px}
+.boxrow{display:grid;grid-template-columns:150px 1fr 30px;gap:10px;align-items:center;font-size:.88rem}
+.big{font-size:2.6rem;font-weight:800;margin:0}
+.failed{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 14px}
+.failed span{background:var(--bad-bg);border:1px solid #f0b5af;border-radius:8px;padding:3px 9px;font-size:.86rem}
+.setup label{display:block;font-weight:700;font-size:.92rem;margin:14px 0 6px}
+.rule{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:16px}
+.rule div{border-radius:10px;padding:10px 12px;font-size:.9rem;border:1px solid var(--line);background:#fff}
+.rule b{display:block;margin-bottom:2px}
+details{border:1px solid var(--line);border-radius:12px;background:#fff;margin-bottom:10px;overflow:hidden}
+summary{padding:11px 14px;font-weight:700;cursor:pointer;background:#f3f6fa}
+.tblw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:7px 12px;border-top:1px solid var(--line);vertical-align:top}
+th{font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+td.c{font-weight:800;white-space:nowrap}
+footer{margin:18px 0 6px;text-align:center;color:var(--muted);font-size:.8rem}
+@media (max-width:560px){
+  #app{padding:12px}
+  .code{font-size:3.2rem}
+  .boxrow{grid-template-columns:110px 1fr 26px}
+  .opts.grid{grid-template-columns:1fr 1fr}
+}
+@media (prefers-reduced-motion:reduce){.card{transition:none}.bar i{transition:none}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+(function(){
+'use strict';
+
+/* ============ DATOS ============ */
+var GROUPS={1:'Financiación básica',2:'Activo no corriente',3:'Existencias',4:'Acreedores y deudores',5:'Cuentas financieras',6:'Compras y gastos',7:'Ventas e ingresos'};
+var SUBS={'10':'Capital','11':'Reservas','12':'Resultados pendientes de aplicación','17':'Deudas a largo plazo por préstamos y otros conceptos','20':'Inmovilizaciones intangibles','21':'Inmovilizaciones materiales','30':'Comerciales','31':'Materias primas','35':'Productos terminados','40':'Proveedores','41':'Acreedores varios','43':'Clientes','44':'Deudores varios','47':'Administraciones Públicas','52':'Deudas a corto plazo por préstamos y otros conceptos','57':'Tesorería','60':'Compras','62':'Servicios exteriores','64':'Gastos de personal','66':'Gastos financieros','70':'Ventas de mercaderías, producción propia y servicios','75':'Otros ingresos de gestión','76':'Ingresos financieros','28':'Amortización acumulada del inmovilizado','46':'Personal','49':'Deterioro de valor de créditos comerciales y provisiones a corto plazo','61':'Variación de existencias','63':'Tributos','65':'Otros gastos de gestión','67':'Pérdidas procedentes de activos no corrientes y gastos excepcionales','68':'Dotaciones para amortizaciones','69':'Pérdidas por deterioro y otras dotaciones','77':'Beneficios procedentes de activos no corrientes e ingresos excepcionales'};
+var MASS={ANC:{l:'Activo no corriente',k:'a'},AC:{l:'Activo corriente',k:'a'},PNC:{l:'Pasivo no corriente',k:'p'},PC:{l:'Pasivo corriente',k:'p'},PN:{l:'Patrimonio neto',k:'n'},G:{l:'Gasto',k:'g'},I:{l:'Ingreso',k:'i'}};
+var NAT={
+  D:{l:'Deudora',d:'Su saldo normal está en el Debe: el cargo la aumenta y el abono la disminuye.'},
+  A:{l:'Acreedora',d:'Su saldo normal está en el Haber: el abono la aumenta y el cargo la disminuye.'},
+  V:{l:'Variable',d:'Su saldo puede ser acreedor (beneficio) o deudor (pérdida), según el resultado.'}
+};
+var DEUDA_C='Se paga o se cancela la deuda.', DEUDA_A='Nace la deuda (se recibe el préstamo o se compra a crédito).';
+var DEF={
+  ANC:['Se adquiere el elemento (compra, construcción o aportación).','Se vende o se da de baja el elemento.'],
+  PNC:[DEUDA_C,DEUDA_A],PC:[DEUDA_C,DEUDA_A],
+  G:['Se produce el gasto durante el ejercicio.','Al cierre, se salda contra la cuenta de pérdidas y ganancias.'],
+  I:['Al cierre, se salda contra la cuenta de pérdidas y ganancias.','Se produce el ingreso durante el ejercicio.']
+};
+var EXIST_C='Al cierre, por el valor de las existencias finales (inventario final).', EXIST_A='Al cierre, para dar de baja las existencias iniciales.';
+var TIP_DEUDAS='Truco de clase: mercaderías → (400) Proveedores · servicios (luz, publicidad, seguros) → (410) Acreedores · inmovilizado → (523) hasta 1 año o (173) a más de 1 año.';
+var TIP_DERECHOS='Truco de clase: lo mismo que con las deudas. (430) Clientes nos deben mercaderías; (440) Deudores nos deben otros servicios.';
+/* [codigo, nombre, masa, naturaleza, ejemplo, cargo, abono, truco, trampa] */
+var RAW=[
+['100','Capital social','PN','A','Lo que aportan los socios al crear la sociedad.','Se reduce el capital o se devuelven aportaciones.','Los socios aportan capital.'],
+['102','Capital','PN','A','Lo que aporta el empresario individual.','El empresario retira capital.','El empresario aporta capital.'],
+['113','Reservas voluntarias','PN','A','Beneficios que la empresa decide guardar libremente.','Se usan las reservas (por ejemplo, para compensar pérdidas).','Se destinan beneficios a reservas.'],
+['129','Resultado del ejercicio','PN','V','El beneficio o la pérdida que resulta de la cuenta de pérdidas y ganancias.','Hay pérdida (saldo deudor).','Hay beneficio (saldo acreedor).','','Es una cuenta de BALANCE (grupo 1), aunque su importe se calcula con gastos (6) e ingresos (7). Su saldo puede ser deudor o acreedor.'],
+['170','Deudas a largo plazo con entidades de crédito','PNC','A','Un préstamo bancario a devolver en más de un año.'],
+['171','Deudas a largo plazo','PNC','A','Una deuda a más de un año con alguien que no es un banco.'],
+['173','Proveedores de inmovilizado a largo plazo','PNC','A','Deuda por comprar maquinaria o un vehículo que se paga en más de un año.','','',TIP_DEUDAS],
+['175','Efectos a pagar a largo plazo','PNC','A','Letras aceptadas para pagar deudas no comerciales a más de un año.'],
+['206','Aplicaciones informáticas','ANC','D','El programa de contabilidad que compra la empresa (inmovilizado intangible).'],
+['210','Terrenos y bienes naturales','ANC','D','Un solar para construir la nave.'],
+['211','Construcciones','ANC','D','El edificio o el local de la empresa.'],
+['212','Instalaciones técnicas','ANC','D','Una línea de producción o de envasado.'],
+['213','Maquinaria','ANC','D','Una máquina de corte o de embalaje.'],
+['214','Utillaje','ANC','D','Herramientas y útiles que se usan junto a la maquinaria.'],
+['215','Otras instalaciones','ANC','D','La climatización o la instalación eléctrica del local.'],
+['216','Mobiliario','ANC','D','Mesas, sillas y archivadores de la oficina.'],
+['217','Equipos para procesos de información','ANC','D','Ordenadores, impresoras y servidores.'],
+['218','Elementos de transporte','ANC','D','La furgoneta de reparto.'],
+['219','Otro inmovilizado material','ANC','D','Elementos materiales que no encajan en las cuentas 210 a 218.'],
+['300','Mercaderías','AC','D','Productos que la empresa compra para revenderlos.',EXIST_C,EXIST_A],
+['310','Materias primas','AC','D','Materiales que se transforman en producto (harina, madera…).',EXIST_C,EXIST_A],
+['350','Productos terminados','AC','D','Productos fabricados por la empresa y listos para vender.',EXIST_C,EXIST_A],
+['400','Proveedores','PC','A','Deuda por comprar mercaderías.','','',TIP_DEUDAS],
+['401','Proveedores, efectos comerciales a pagar','PC','A','Letras que aceptamos pagar a proveedores de mercaderías.'],
+['410','Acreedores por prestaciones de servicios','PC','A','La factura pendiente de pago de la luz o de la publicidad.','','',TIP_DEUDAS],
+['430','Clientes','AC','D','Clientes que nos deben la venta de mercaderías.','Vendemos mercaderías a crédito.','El cliente nos paga.',TIP_DERECHOS],
+['431','Clientes, efectos comerciales a cobrar','AC','D','Letras de cambio aceptadas por los clientes.','El cliente nos acepta una letra.','Se cobra la letra al vencimiento.'],
+['440','Deudores','AC','D','Quien nos debe por algo distinto de vender mercaderías.','Nace un derecho de cobro que no es una venta habitual.','Se cobra ese derecho.',TIP_DERECHOS],
+['472','Hacienda Pública, IVA soportado','AC','D','El IVA de las facturas de compras y gastos.','Pagamos IVA en una compra o en un gasto.','Se liquida el IVA con Hacienda (se compensa con el IVA repercutido).'],
+['477','Hacienda Pública, IVA repercutido','PC','A','El IVA que cobramos en las ventas y debemos ingresar en Hacienda.','Se liquida el IVA con Hacienda (se compensa con el IVA soportado).','Cobramos IVA en una venta.'],
+['520','Deudas a corto plazo con entidades de crédito','PC','A','Un préstamo bancario a devolver en menos de un año.'],
+['521','Deudas a corto plazo','PC','A','Una deuda a menos de un año con alguien que no es un banco.'],
+['523','Proveedores de inmovilizado a corto plazo','PC','A','Deuda por comprar maquinaria o un vehículo que se paga en menos de un año.','','',TIP_DEUDAS],
+['525','Efectos a pagar a corto plazo','PC','A','Letras aceptadas para pagar deudas no comerciales a menos de un año.'],
+['570','Caja, euros','AC','D','El dinero en efectivo.','Entra dinero en efectivo (cobros).','Sale dinero en efectivo (pagos).'],
+['572','Bancos e instituciones de crédito c/c vista, euros','AC','D','El saldo de la cuenta corriente del banco.','Entra dinero en el banco (ingresos y cobros).','Sale dinero del banco (pagos y reintegros).'],
+['600','Compras de mercaderías','G','D','Las mercaderías que se compran durante el ejercicio.','Se compran mercaderías.'],
+['606','Descuentos sobre compras por pronto pago','G','A','El descuento que nos hace el proveedor por pagar antes de tiempo.','Al cierre, se salda contra la cuenta de pérdidas y ganancias.','Nos conceden el descuento.','','Es del grupo 6 (gestión), pero su saldo es ACREEDOR: no es un gasto, resta importe a las compras.'],
+['621','Arrendamientos y cánones','G','D','El alquiler del local o de una máquina.'],
+['622','Reparaciones y conservación','G','D','Arreglar la furgoneta o mantener una máquina.'],
+['623','Servicios de profesionales independientes','G','D','Los honorarios de la gestoría, del abogado o del auditor.'],
+['624','Transportes','G','D','Portes pagados a una empresa de transporte.'],
+['625','Primas de seguros','G','D','El seguro del local o de la furgoneta.'],
+['626','Servicios bancarios y similares','G','D','Las comisiones y gastos que cobra el banco.'],
+['627','Publicidad, propaganda y relaciones públicas','G','D','Campañas de publicidad, folletos o patrocinios.'],
+['628','Suministros','G','D','La luz, el agua y el gas.'],
+['629','Otros servicios','G','D','Teléfono, material de oficina, limpieza y otros servicios.'],
+['640','Sueldos y salarios','G','D','Las nóminas del personal.'],
+['642','Seguridad Social a cargo de la empresa','G','D','La cuota que paga la empresa a la Seguridad Social.'],
+['662','Intereses de deudas','G','D','Los intereses de los préstamos que pagamos al banco.'],
+['700','Ventas de mercaderías','I','A','La venta de los productos que se compraron para revender.'],
+['705','Prestaciones de servicios','I','A','Las facturas por servicios que presta la empresa.'],
+['752','Ingresos por arrendamientos','I','A','El alquiler que cobra la empresa por ceder un local o un bien.'],
+['754','Ingresos por comisiones','I','A','La comisión por intermediar en una operación.'],
+['755','Ingresos por servicios al personal','I','A','Lo que la empresa cobra a su personal (por ejemplo, el comedor).'],
+['759','Ingresos por servicios diversos','I','A','Otros servicios facturados que no son la actividad habitual.'],
+['769','Otros ingresos financieros','I','A','Los intereses que cobra la empresa (por ejemplo, de la cuenta bancaria).']
+];
+
+var TRAPG6='Es del grupo 6 (gestión), pero su saldo es ACREEDOR: resta importe a las compras.';
+var TRAPG7='Es del grupo 7 (gestión), pero su saldo es DEUDOR: resta importe a las ventas.';
+var CIERRE='Al cierre, se salda contra la cuenta de pérdidas y ganancias.';
+/* Cuentas de ampliación (cuadro de cuentas completo, PGC RD 1514/2007) */
+var EXTRA=[
+['112','Reserva legal','PN','A','La parte del beneficio que la ley obliga a guardar en las sociedades.','Se utiliza (por ejemplo, para compensar pérdidas).','Se destinan beneficios a reserva legal.'],
+['120','Remanente','PN','A','Beneficio de años anteriores que no se ha repartido ni llevado a reservas.','Se reparte o se aplica el remanente.','Queda beneficio pendiente de aplicar.'],
+['121','Resultados negativos de ejercicios anteriores','PN','D','Pérdidas de años anteriores pendientes de compensar.','Se traspasa la pérdida de un ejercicio.','Se compensa con beneficios o reservas.','','Es patrimonio neto (grupo 1), pero su saldo es DEUDOR: resta del patrimonio neto.'],
+['280','Amortización acumulada del inmovilizado intangible','ANC','A','El desgaste acumulado de programas informáticos y otros intangibles.','Se da de baja el elemento ya amortizado.','Se dota la amortización del ejercicio.','','Está en el grupo 2 (activo), pero su saldo es ACREEDOR: resta valor al inmovilizado.'],
+['281','Amortización acumulada del inmovilizado material','ANC','A','El desgaste acumulado de maquinaria, mobiliario o vehículos.','Se da de baja el elemento ya amortizado.','Se dota la amortización del ejercicio.','','Está en el grupo 2 (activo), pero su saldo es ACREEDOR: resta valor al inmovilizado.'],
+['407','Anticipos a proveedores','AC','D','Dinero que entregamos a un proveedor antes de recibir las mercaderías.','Entregamos el anticipo.','Llega la mercancía y se descuenta el anticipo.'],
+['436','Clientes de dudoso cobro','AC','D','Clientes que se retrasan y de los que dudamos que paguen.','Un cliente pasa a ser de dudoso cobro (sale de 430).','El cliente paga o se da su deuda por perdida.'],
+['438','Anticipos de clientes','PC','A','Dinero que un cliente nos entrega antes de recibir las mercaderías.','Entregamos las mercaderías y se aplica el anticipo.','El cliente nos entrega el anticipo.'],
+['460','Anticipos de remuneraciones','AC','D','Un adelanto de sueldo que se da a un trabajador.','Damos el adelanto.','Se descuenta de la nómina.'],
+['465','Remuneraciones pendientes de pago','PC','A','Sueldos devengados que todavía no se han pagado.','Se paga la nómina.','Se devenga la nómina del mes.'],
+['473','Hacienda Pública, retenciones y pagos a cuenta','AC','D','Retenciones que nos practican y que luego se descuentan del impuesto.','Nos practican una retención.','Se aplica en la declaración del impuesto.'],
+['475','Hacienda Pública, acreedora por conceptos fiscales','PC','A','Lo que debemos a Hacienda por IVA, retenciones u otros impuestos.','Se paga a Hacienda.','Nace la deuda con Hacienda.'],
+['476','Organismos de la Seguridad Social, acreedores','PC','A','Lo que debemos a la Seguridad Social por cuotas.','Se pagan las cuotas.','Se devengan las cuotas.'],
+['490','Deterioro de valor de créditos por operaciones comerciales','AC','A','La pérdida estimada de los créditos de clientes que quizá no cobremos.','Se revierte o se aplica el deterioro.','Se dota el deterioro.','','Está en el grupo 4 (activo), pero su saldo es ACREEDOR: resta valor a los créditos de clientes.'],
+['601','Compras de materias primas','G','D','Materiales que se compran para transformarlos en producto.','Se compran materias primas.'],
+['602','Compras de otros aprovisionamientos','G','D','Envases, embalajes o combustible que se compran para la actividad.','Se compran estos materiales.'],
+['608','Devoluciones de compras y operaciones similares','G','A','Mercaderías que devolvemos al proveedor.',CIERRE,'Devolvemos mercaderías al proveedor.','',TRAPG6],
+['609','«Rappels» por compras','G','A','El descuento que nos hace el proveedor por el volumen de compras.',CIERRE,'Nos conceden el «rappel».','',TRAPG6],
+['610','Variación de existencias de mercaderías','G','V','La diferencia entre las existencias iniciales y las finales.','Al cierre, por el valor de las existencias iniciales.','Al cierre, por el valor de las existencias finales.','','Es de gestión (grupo 6), pero su saldo puede ser deudor o acreedor, según si las existencias han bajado o han subido.'],
+['630','Impuesto sobre beneficios','G','D','El impuesto que paga la empresa sobre sus beneficios.','Se devenga el impuesto del ejercicio.'],
+['631','Otros tributos','G','D','Impuestos y tasas que no gravan el beneficio (IBI, tasas municipales).'],
+['650','Pérdidas de créditos comerciales incobrables','G','D','Un cliente no paga y se da su deuda por perdida.'],
+['665','Intereses por descuento de efectos y operaciones de «factoring»','G','D','Lo que cobra el banco por descontar una letra o adelantar facturas.'],
+['671','Pérdidas procedentes del inmovilizado material','G','D','Se vende una máquina por menos de su valor contable.'],
+['680','Amortización del inmovilizado intangible','G','D','El gasto anual por el desgaste de un programa informático.'],
+['681','Amortización del inmovilizado material','G','D','El gasto anual por el desgaste de maquinaria, mobiliario o vehículos.'],
+['694','Pérdidas por deterioro de créditos por operaciones comerciales','G','D','El gasto por estimar que algún cliente no nos pagará.'],
+['701','Ventas de productos terminados','I','A','La venta de los productos que fabrica la empresa.'],
+['706','Descuentos sobre ventas por pronto pago','I','D','El descuento que hacemos al cliente por pagar antes de tiempo.','Concedemos el descuento al cliente.',CIERRE,'',TRAPG7],
+['708','Devoluciones de ventas y operaciones similares','I','D','Mercaderías que nos devuelve un cliente.','El cliente nos devuelve mercaderías.',CIERRE,'',TRAPG7],
+['709','«Rappels» sobre ventas','I','D','El descuento que hacemos al cliente por el volumen de sus compras.','Concedemos el «rappel» al cliente.',CIERRE,'',TRAPG7],
+['771','Beneficios procedentes del inmovilizado material','I','A','Se vende una máquina por más de su valor contable.']
+];
+var EXT_DEFAULT=false; /* true = las cuentas de ampliación aparecen activadas al abrir el juego */
+var ACC=RAW.concat(EXTRA).map(function(r,i){
+  var d=DEF[r[2]]||['',''];
+  return {code:r[0],name:r[1],mass:r[2],nat:r[3],ej:r[4]||'',cargo:r[5]||d[0],abono:r[6]||d[1],tip:r[7]||'',trap:r[8]||'',g:+r[0][0],sg:r[0].slice(0,2),ext:i>=RAW.length};
+});
+var BYCODE={}; ACC.forEach(function(a){BYCODE[a.code]=a;});
+var NEXT=EXTRA.length, useExt=EXT_DEFAULT;
+function pool(){return useExt?ACC:ACC.filter(function(a){return !a.ext;});}
+
+/* ============ UTILIDADES ============ */
+function $(s,r){return (r||document).querySelector(s);}
+function $$(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s));}
+function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+function tipo(a){return a.g<=5?'B':'G';}
+function kind(a){return MASS[a.mass].k;}
+function badge(a){return '<span class="badge b-'+kind(a)+'">'+MASS[a.mass].l+'</span>';}
+function extb(a){return a.ext?' <span class="badge extb">ampliación</span>':'';}
+
+var NOTA_APROBADO=70; /* % del test a partir del cual Moodle marca la actividad como superada */
+/* --- Conexión SCORM 1.2 (si no hay aula virtual, el juego funciona igual) --- */
+var SCO=(function(){
+  var api=null, ok=false, fin=false;
+  function find(w){var n=0;try{while(w&&!w.API&&w.parent&&w.parent!==w&&n<10){w=w.parent;n++;}}catch(e){}return (w&&w.API)||null;}
+  try{api=find(window); if(!api&&window.opener) api=find(window.opener);}catch(e){}
+  try{if(api) ok=String(api.LMSInitialize(''))==='true';}catch(e){}
+  function get(k){try{return ok?String(api.LMSGetValue(k)):'';}catch(e){return '';}}
+  function set(k,v){try{if(ok) api.LMSSetValue(k,String(v));}catch(e){}}
+  function commit(){try{if(ok) api.LMSCommit('');}catch(e){}}
+  function finish(){if(ok&&!fin){fin=true;try{api.LMSFinish('');}catch(e){}}}
+  window.addEventListener('pagehide',finish); window.addEventListener('beforeunload',finish);
+  return {ok:ok,get:get,set:set,commit:commit};
+})();
+var KEY='pgc_cuentas_v1', prog={boxes:{},best:0,score:0};
+try{var raw=localStorage.getItem(KEY); if(raw){var p=JSON.parse(raw); if(p&&p.boxes) prog=p;}}catch(e){}
+function pack(){return ACC.map(function(a){return prog.boxes[a.code]||1;}).join('')+'|'+(prog.best||0)+'|'+(prog.score||0);}
+function unpack(str){
+  var p=String(str).split('|'); if(p.length<3||p[0].length!==ACC.length) return;
+  var b={}; ACC.forEach(function(a,i){var n=+p[0][i]; if(n>1&&n<=4) b[a.code]=n;});
+  prog={boxes:b,best:+p[1]||0,score:+p[2]||0};
+}
+if(SCO.ok){
+  var sd=SCO.get('cmi.suspend_data'); if(sd) unpack(sd);
+  var st0=SCO.get('cmi.core.lesson_status'); if(!st0||st0==='not attempted') SCO.set('cmi.core.lesson_status','incomplete');
+  SCO.commit();
+}
+function save(){
+  try{localStorage.setItem(KEY,JSON.stringify(prog));}catch(e){}
+  if(SCO.ok){SCO.set('cmi.suspend_data',pack());SCO.commit();}
+}
+function reportScore(pct){
+  if(pct>(prog.score||0)) prog.score=pct;
+  save();
+  if(!SCO.ok) return;
+  SCO.set('cmi.core.score.min',0); SCO.set('cmi.core.score.max',100); SCO.set('cmi.core.score.raw',prog.score);
+  SCO.set('cmi.core.lesson_status',prog.score>=NOTA_APROBADO?'passed':'completed');
+  SCO.commit();
+}
+function box(c){return prog.boxes[c]||1;}
+function grade(c,ok){prog.boxes[c]=ok?Math.min(box(c)+1,4):1;save();}
+
+/* ============ ESTRUCTURA ============ */
+var app=document.getElementById('app');
+app.innerHTML='<header><h1>Las cuentas del PGC</h1><p>Aprende el código, el grupo, el subgrupo, si es de balance o de gestión y su naturaleza (deudora o acreedora).</p></header>'+
+ '<nav class="tabs" id="tabs" aria-label="Modos de juego"></nav>'+
+ '<label class="toggle"><input type="checkbox" id="extchk"'+(useExt?' checked':'')+'> Incluir cuentas de ampliación (+'+NEXT+': amortizaciones, deterioros, descuentos y devoluciones, personal…)</label>'+
+ '<main id="main"></main><footer id="foot"></footer>';
+var main=$('#main');
+var MODES=[['study','Estudiar'],['test','Test'],['codes','Códigos'],['rep','Repaso'],['map','Mapa']];
+var S={mode:'study',
+  study:{filter:'all',idx:0,flip:false,order:null,custom:[]},
+  test:{level:'basic',n:10,g:'all',run:false},
+  codes:{run:false},
+  rep:null};
+
+function setMode(m){S.mode=m;render();}
+function renderTabs(){
+  $('#tabs').innerHTML=MODES.map(function(m){return '<button class="tab" data-m="'+m[0]+'" aria-current="'+(S.mode===m[0])+'">'+m[1]+'</button>';}).join('');
+}
+$('#tabs').addEventListener('click',function(e){var b=e.target.closest('.tab'); if(b) setMode(b.dataset.m);});
+$('#extchk').addEventListener('change',function(){
+  useExt=this.checked;
+  S.study.idx=0;S.study.flip=false;S.study.order=null;
+  S.test.run=false;S.codes.run=false;if(S.rep)S.rep.cur=null;
+  render();
+});
+function render(){
+  renderTabs();
+  $('#foot').textContent='Basado en la UT2 «El PGC y las cuentas anuales» · Cuadro de cuentas del PGC de Pymes (RD 1514/2007) · '+pool().length+' cuentas';
+  ({study:viewStudy,test:viewTest,codes:viewCodes,rep:viewRep,map:viewMap})[S.mode]();
+  window.scrollTo&&window.scrollTo(0,0);
+}
+
+/* ============ ESTUDIAR ============ */
+function studyDeck(){
+  var st=S.study, list;
+  if(st.filter==='all') list=pool().slice();
+  else if(st.filter==='trap') list=pool().filter(function(a){return a.trap;});
+  else if(st.filter==='custom') list=st.custom.map(function(c){return BYCODE[c];});
+  else list=pool().filter(function(a){return String(a.g)===st.filter;});
+  if(st.order==='rand') list=shuffle(list);
+  return list;
+}
+function backHTML(a){
+  return '<div class="bhead"><span class="code">'+a.code+'</span><b>'+a.name+'</b>'+extb(a)+'</div>'+
+  '<dl class="facts">'+
+   '<dt>Grupo</dt><dd>'+a.g+' · '+GROUPS[a.g]+'</dd>'+
+   '<dt>Subgrupo</dt><dd>'+a.sg+' · '+SUBS[a.sg]+'</dd>'+
+   '<dt>Tipo</dt><dd>'+(tipo(a)==='B'?'Cuenta de balance':'Cuenta de gestión')+'</dd>'+
+   '<dt>Masa</dt><dd>'+badge(a)+'</dd>'+
+   '<dt>Naturaleza</dt><dd>'+NAT[a.nat].l+'</dd>'+
+  '</dl>'+
+  '<p class="small muted" style="margin:6px 0 0">'+NAT[a.nat].d+'</p>'+
+  (a.ej?'<p class="small" style="margin:8px 0 0"><b>Ejemplo:</b> '+a.ej+'</p>':'')+
+  '<div class="dc"><div><b>Se carga (Debe) cuando…</b>'+a.cargo+'</div><div><b>Se abona (Haber) cuando…</b>'+a.abono+'</div></div>'+
+  (a.trap?'<div class="note"><b>⚠ Cuenta trampa.</b> '+a.trap+'</div>':'')+
+  (a.tip?'<div class="tip">'+a.tip+'</div>':'');
+}
+function viewStudy(){
+  var st=S.study, deck=studyDeck();
+  if(!deck.length){st.filter='all';deck=studyDeck();}
+  if(st.idx>=deck.length) st.idx=0;
+  var a=deck[st.idx];
+  var chips=[['all','Todas ('+pool().length+')']];
+  for(var g=1;g<=7;g++) chips.push([String(g),'Grupo '+g]);
+  chips.push(['trap','⚠ Trampa']);
+  if(st.custom.length) chips.push(['custom','Falladas ('+st.custom.length+')']);
+  main.innerHTML='<div class="chips" id="chips">'+chips.map(function(c){return '<button class="chip" data-f="'+c[0]+'" aria-pressed="'+(st.filter===c[0])+'">'+c[1]+'</button>';}).join('')+'</div>'+
+  '<div class="cardwrap"><div class="card'+(st.flip?' flipped':'')+'" id="card" tabindex="0" role="button" aria-label="Girar la tarjeta">'+
+    '<div class="face front k-'+kind(a)+'"><span class="code">'+a.code+'</span><span class="cname">'+a.name+'</span><span class="hint">Piensa: ¿grupo? ¿balance o gestión? ¿deudora o acreedora? Toca para comprobar.</span></div>'+
+    '<div class="face back k-'+kind(a)+'">'+backHTML(a)+'</div></div></div>'+
+  '<div class="row spread"><button class="btn sec" id="prev">← Anterior</button><span class="muted">'+(st.idx+1)+' / '+deck.length+'</span><button class="btn" id="next">Siguiente →</button></div>'+
+  '<div class="row center" style="margin-top:12px"><button class="btn sec" id="flipb">Girar tarjeta</button><button class="btn sec" id="shuf">Barajar</button></div>';
+  $('#chips').onclick=function(e){var b=e.target.closest('.chip'); if(!b)return; st.filter=b.dataset.f; st.idx=0; st.flip=false; st.order=null; viewStudy();};
+  function go(d){st.flip=false; st.idx=(st.idx+d+deck.length)%deck.length; viewStudy();}
+  function flip(){st.flip=!st.flip; $('#card').classList.toggle('flipped',st.flip);}
+  $('#prev').onclick=function(){go(-1);}; $('#next').onclick=function(){go(1);};
+  $('#card').onclick=flip; $('#flipb').onclick=flip;
+  $('#card').onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();flip();}};
+  $('#shuf').onclick=function(){st.order='rand';st.idx=0;st.flip=false;viewStudy();};
+}
+document.addEventListener('keydown',function(e){
+  if(S.mode!=='study'||/INPUT|SELECT|TEXTAREA/.test((e.target||{}).tagName||''))return;
+  if(e.key==='ArrowRight'){var n=$('#next');n&&n.click();}
+  if(e.key==='ArrowLeft'){var p=$('#prev');p&&p.click();}
+});
+
+/* ============ FORMULARIO DE PREGUNTA (Test y Repaso) ============ */
+var FL={g:'Grupo',sg:'Subgrupo',tipo:'¿Cuenta de balance o de gestión?',mass:'Masa patrimonial',nat:'Naturaleza del saldo'};
+function fieldsOf(level){return level==='full'?['g','sg','tipo','mass','nat']:['g','tipo','nat'];}
+function optsOf(k){
+  if(k==='g') return Object.keys(GROUPS).map(function(g){return [g,g+' · '+GROUPS[g]];});
+  if(k==='tipo') return [['B','Balance (grupos 1 a 5)'],['G','Gestión (grupos 6 y 7)']];
+  if(k==='mass') return Object.keys(MASS).map(function(m){return [m,MASS[m].l];});
+  if(k==='nat') return [['D','Deudora'],['A','Acreedora'],['V','Variable (deudora o acreedora)']];
+}
+function truth(a){return {g:String(a.g),sg:a.sg,tipo:tipo(a),mass:a.mass,nat:a.nat};}
+function labelOf(k,v){
+  if(k==='sg') return v+' · '+SUBS[v];
+  var o=optsOf(k).filter(function(x){return x[0]===v;})[0]; return o?o[1]:v;
+}
+function subsInPool(){var o={};pool().forEach(function(a){o[a.sg]=1;});return Object.keys(o).sort();}
+function questionHTML(a,level){
+  var fs=fieldsOf(level);
+  var h='<div class="q" id="q"><div class="qtitle"><span class="code">'+a.code+'</span><span class="cname">'+a.name+'</span></div>';
+  fs.forEach(function(k){
+    h+='<div class="field" id="row-'+k+'"><div class="lab"><span>'+FL[k]+'</span><span class="ans" aria-live="polite"></span></div>';
+    if(k==='sg'){
+      h+='<select id="sgsel" aria-label="Subgrupo"><option value="">Elige el subgrupo…</option>'+
+        subsInPool().map(function(s){return '<option value="'+s+'">'+s+' · '+SUBS[s]+'</option>';}).join('')+'</select>';
+    }else{
+      h+='<div class="opts'+(k==='g'||k==='mass'?' grid':'')+'">'+optsOf(k).map(function(o){return '<button type="button" class="opt" data-k="'+k+'" data-v="'+o[0]+'" aria-pressed="false">'+o[1]+'</button>';}).join('')+'</div>';
+    }
+    h+='</div>';
+  });
+  h+='<div class="row"><button class="btn" id="chk" disabled>Comprobar</button></div><div id="fb"></div></div>';
+  return h;
+}
+function feedbackHTML(a,res,fs){
+  var ok=fs.every(function(k){return res[k];});
+  return '<div class="fb '+(ok?'good':'fail')+'"><h3>'+(ok?'✓ ¡Correcto!':'Repasa la ficha de la cuenta '+a.code)+'</h3>'+
+   '<p class="small" style="margin:0 0 6px"><b>'+a.code+' · '+a.name+'</b> — Grupo '+a.g+' ('+GROUPS[a.g]+'), subgrupo '+a.sg+' ('+SUBS[a.sg]+'). '+(tipo(a)==='B'?'Balance':'Gestión')+' · '+MASS[a.mass].l+' · '+NAT[a.nat].l+'.</p>'+
+   '<p class="small" style="margin:0 0 4px"><b>Se carga:</b> '+a.cargo+'</p><p class="small" style="margin:0"><b>Se abona:</b> '+a.abono+'</p>'+
+   (a.trap?'<div class="note"><b>⚠ Cuenta trampa.</b> '+a.trap+'</div>':'')+(a.tip?'<div class="tip">'+a.tip+'</div>':'')+'</div>';
+}
+function bindQuestion(a,level,cb){
+  var root=$('#q'), fs=fieldsOf(level), sel={}, btn=$('#chk'), done=false, t=truth(a);
+  function upd(){btn.disabled=!fs.every(function(k){return sel[k];});}
+  root.addEventListener('click',function(e){
+    var b=e.target.closest('.opt'); if(!b||done)return;
+    var k=b.dataset.k; sel[k]=b.dataset.v;
+    $$('.opt[data-k="'+k+'"]',root).forEach(function(x){x.setAttribute('aria-pressed',String(x===b));});
+    upd();
+  });
+  var s=$('#sgsel'); if(s) s.addEventListener('change',function(){sel.sg=s.value;upd();});
+  btn.addEventListener('click',function(){
+    if(done)return; done=true; btn.disabled=true;
+    var res={}, pts=0;
+    fs.forEach(function(k){
+      res[k]=sel[k]===t[k]; if(res[k])pts++;
+      var ans=$('#row-'+k+' .ans',root);
+      ans.textContent=res[k]?'✓ Bien':'✗ Correcto: '+labelOf(k,t[k]);
+      ans.className='ans'+(res[k]?' good':'');
+      if(k==='sg'){s.disabled=true;s.className=res[k]?'ok':'bad';}
+      else $$('.opt[data-k="'+k+'"]',root).forEach(function(x){
+        x.disabled=true;
+        if(x.dataset.v===t[k]) x.classList.add('ok'); else if(x.dataset.v===sel[k]) x.classList.add('bad');
+      });
+    });
+    $('#fb').innerHTML=feedbackHTML(a,res,fs);
+    cb({pts:pts,max:fs.length,all:pts===fs.length});
+  });
+}
+
+/* ============ TEST ============ */
+function viewTest(){
+  var T=S.test;
+  if(!T.run) return testSetup();
+  if(T.i>=T.qs.length) return testResults();
+  var a=T.qs[T.i];
+  main.innerHTML='<div class="row spread" style="margin-bottom:8px"><span class="muted small">Pregunta '+(T.i+1)+' de '+T.qs.length+'</span><span class="muted small">Puntos: <b>'+T.pts+'</b> / '+T.max+'</span></div>'+
+   '<div class="bar" style="margin-bottom:14px"><i style="width:'+(T.i/T.qs.length*100)+'%"></i></div>'+questionHTML(a,T.level);
+  bindQuestion(a,T.level,function(r){
+    T.pts+=r.pts; T.max+=r.max; grade(a.code,r.all); if(!r.all) T.failed.push(a.code);
+    var last=T.i+1>=T.qs.length;
+    $('#fb').insertAdjacentHTML('beforeend','<div class="row" style="margin-top:12px"><button class="btn" id="nx">'+(last?'Ver resultado':'Siguiente →')+'</button></div>');
+    $('#nx').onclick=function(){T.i++;viewTest();};
+    $('#nx').focus();
+  });
+}
+function testSetup(){
+  var T=S.test;
+  function seg(name,vals,cur){return '<div class="opts">'+vals.map(function(v){return '<button class="opt" data-s="'+name+'" data-v="'+v[0]+'" aria-pressed="'+(String(cur)===String(v[0]))+'">'+v[1]+'</button>';}).join('')+'</div>';}
+  var gs=[['all','Todos']].concat(Object.keys(GROUPS).map(function(g){return [g,'Grupo '+g];}));
+  main.innerHTML='<div class="panel setup"><h2 style="margin:0 0 4px;font-size:1.2rem">Test de clasificación</h2>'+
+  '<p class="muted" style="margin:0">Te aparece una cuenta y tienes que clasificarla. Cada acierto suma un punto.</p>'+
+  '<label>Nivel</label>'+seg('level',[['basic','Básico: grupo, balance/gestión y naturaleza'],['full','Completo: añade subgrupo y masa patrimonial']],T.level)+
+  '<label>Número de cuentas</label>'+seg('n',[[10,'10'],[20,'20'],[pool().length,'Todas ('+pool().length+')']],T.n)+
+  '<label>Grupo</label>'+seg('g',gs,T.g)+
+  '<div class="row" style="margin-top:20px"><button class="btn" id="go">Empezar</button></div></div>';
+  main.onclick=function(e){
+    var b=e.target.closest('.opt[data-s]'); if(!b)return;
+    var k=b.dataset.s, v=b.dataset.v; T[k]=(k==='n')?+v:v;
+    $$('.opt[data-s="'+k+'"]',main).forEach(function(x){x.setAttribute('aria-pressed',String(x===b));});
+  };
+  $('#go').onclick=function(){
+    var cand=pool().filter(function(a){return T.g==='all'||String(a.g)===T.g;});
+    T.qs=shuffle(cand).slice(0,Math.min(T.n,cand.length)); T.i=0; T.pts=0; T.max=0; T.failed=[]; T.reported=false; T.run=true; main.onclick=null; viewTest();
+  };
+}
+function testResults(){
+  var T=S.test, pct=Math.round(T.pts/T.max*100);
+  if(!T.reported){T.reported=true;reportScore(pct);}
+  var msg=pct>=90?'¡Excelente! Dominas estas cuentas.':pct>=70?'Muy bien. Repasa las que has fallado.':pct>=50?'Vas por buen camino. Vuelve a las fichas y repite.':'Toca estudiar un poco más las fichas. ¡Tú puedes!';
+  main.innerHTML='<div class="panel" style="text-align:center"><p class="big">'+pct+'%</p><p style="margin:0 0 4px"><b>'+T.pts+' de '+T.max+' puntos</b></p><p class="muted">'+msg+'</p>'+
+   (T.failed.length?'<p class="small" style="margin:12px 0 0"><b>Cuentas falladas</b></p><div class="failed" style="justify-content:center">'+T.failed.map(function(c){return '<span>'+c+' · '+BYCODE[c].name+'</span>';}).join('')+'</div>':'<p>🎉 Sin ningún fallo.</p>')+
+   (SCO.ok?'<p class="small muted">Mejor nota registrada en el aula virtual: <b>'+prog.score+'%</b></p>':'')+'<div class="row center"><button class="btn" id="again">Repetir test</button>'+(T.failed.length?'<button class="btn sec" id="st">Estudiar las falladas</button>':'')+'<button class="btn sec" id="rp">Ir al repaso</button></div></div>';
+  $('#again').onclick=function(){T.run=false;viewTest();};
+  var st=$('#st'); if(st) st.onclick=function(){S.study.custom=T.failed.slice();S.study.filter='custom';S.study.idx=0;S.study.flip=false;S.study.order=null;setMode('study');};
+  $('#rp').onclick=function(){setMode('rep');};
+}
+
+/* ============ CÓDIGOS ↔ NOMBRES ============ */
+function viewCodes(){
+  var C=S.codes;
+  if(!C.run){
+    main.innerHTML='<div class="panel"><h2 style="margin:0 0 4px;font-size:1.2rem">Códigos y nombres</h2><p class="muted" style="margin:0 0 14px">Diez preguntas rápidas: unas veces te damos el código y tienes que elegir el nombre; otras, al revés. Las opciones se parecen, así que fíjate bien.</p><button class="btn" id="go">Empezar</button></div>';
+    $('#go').onclick=function(){
+      C.qs=shuffle(pool()).slice(0,10).map(function(a){
+        var same=shuffle(pool().filter(function(b){return b.code!==a.code&&b.g===a.g;}));
+        var other=shuffle(pool().filter(function(b){return b.code!==a.code&&b.g!==a.g;}));
+        return {a:a,dir:Math.random()<.5?'c2n':'n2c',opts:shuffle([a].concat(same.concat(other).slice(0,3)))};
+      });
+      C.i=0;C.score=0;C.failed=[];C.run=true;viewCodes();
+    };
+    return;
+  }
+  if(C.i>=C.qs.length){
+    main.innerHTML='<div class="panel" style="text-align:center"><p class="big">'+C.score+' / '+C.qs.length+'</p><p class="muted">'+(C.score>=9?'¡Memoria de contable!':C.score>=7?'Muy bien, casi lo tienes.':'Sigue practicando con las tarjetas de estudio.')+'</p>'+
+     (C.failed.length?'<p class="small"><b>Para repasar</b></p><div class="failed" style="justify-content:center">'+C.failed.map(function(c){return '<span>'+c+' · '+BYCODE[c].name+'</span>';}).join('')+'</div>':'')+
+     '<div class="row center"><button class="btn" id="again">Otra ronda</button></div></div>';
+    $('#again').onclick=function(){C.run=false;viewCodes();};
+    return;
+  }
+  var q=C.qs[C.i], a=q.a;
+  main.innerHTML='<div class="row spread" style="margin-bottom:8px"><span class="muted small">Pregunta '+(C.i+1)+' de '+C.qs.length+'</span><span class="muted small">Aciertos: <b>'+C.score+'</b></span></div>'+
+   '<div class="bar" style="margin-bottom:14px"><i style="width:'+(C.i/C.qs.length*100)+'%"></i></div>'+
+   '<div class="q"><p style="margin:0 0 4px" class="muted small">'+(q.dir==='c2n'?'¿Cómo se llama la cuenta…?':'¿Qué código tiene la cuenta…?')+'</p>'+
+   '<div class="qtitle" style="border:0;margin-bottom:6px">'+(q.dir==='c2n'?'<span class="code">'+a.code+'</span>':'<span class="cname" style="font-size:1.4rem">'+a.name+'</span>')+'</div>'+
+   '<div class="opts" id="co" style="flex-direction:column;align-items:stretch">'+q.opts.map(function(o){return '<button class="opt" data-c="'+o.code+'">'+(q.dir==='c2n'?o.name:'<b>'+o.code+'</b>')+'</button>';}).join('')+'</div><div id="fb"></div></div>';
+  $('#co').onclick=function(e){
+    var b=e.target.closest('.opt'); if(!b||b.disabled)return;
+    var ok=b.dataset.c===a.code;
+    $$('.opt',main).forEach(function(x){x.disabled=true;if(x.dataset.c===a.code)x.classList.add('ok');else if(x===b)x.classList.add('bad');});
+    if(ok)C.score++; else C.failed.push(a.code);
+    $('#fb').innerHTML='<div class="fb '+(ok?'good':'fail')+'"><h3>'+(ok?'✓ ¡Correcto!':'✗ Era '+a.code+' · '+a.name)+'</h3><p class="small" style="margin:0">Grupo '+a.g+' · '+GROUPS[a.g]+' — subgrupo '+a.sg+' · '+SUBS[a.sg]+'.</p></div><div class="row" style="margin-top:12px"><button class="btn" id="nx">'+(C.i+1>=C.qs.length?'Ver resultado':'Siguiente →')+'</button></div>';
+    $('#nx').onclick=function(){C.i++;viewCodes();}; $('#nx').focus();
+  };
+}
+
+/* ============ REPASO ESPACIADO ============ */
+var BOXN={1:'Por aprender',2:'Reforzando',3:'Casi dominada',4:'Dominada'};
+function pickNext(last){
+  var W={1:10,2:5,3:2,4:1}, cand=pool().filter(function(a){return a.code!==last;});
+  var tot=cand.reduce(function(s,a){return s+W[box(a.code)];},0), r=Math.random()*tot;
+  for(var i=0;i<cand.length;i++){r-=W[box(cand[i].code)]; if(r<=0)return cand[i];}
+  return cand[0];
+}
+function viewRep(){
+  if(!S.rep) S.rep={n:0,ok:0,streak:0,cur:null};
+  var R=S.rep; if(!R.cur) R.cur=pickNext(null);
+  var a=R.cur, counts={1:0,2:0,3:0,4:0};
+  pool().forEach(function(x){counts[box(x.code)]++;});
+  var boxes=[1,2,3,4].map(function(b){return '<div class="boxrow"><span>Caja '+b+' · '+BOXN[b]+'</span><div class="bar"><i style="width:'+(counts[b]/pool().length*100)+'%"></i></div><b>'+counts[b]+'</b></div>';}).join('');
+  main.innerHTML='<div class="panel" style="margin-bottom:14px"><div class="stats"><div class="stat"><b>'+R.ok+' / '+R.n+'</b><span>Aciertos</span></div><div class="stat"><b>'+R.streak+'</b><span>Racha</span></div><div class="stat"><b>'+prog.best+'</b><span>Mejor racha</span></div><div class="stat"><b>'+counts[4]+' / '+pool().length+'</b><span>Dominadas</span></div></div>'+
+   '<div class="boxes">'+boxes+'</div><p class="small muted" style="margin:0">Si aciertas, la cuenta sube de caja y sale menos. Si fallas, vuelve a la caja 1 y sale más a menudo.'+(counts[4]===pool().length?' <b>¡Has dominado todas las cuentas!</b>':'')+'</p></div>'+questionHTML(a,'basic')+
+   '<div class="row" style="margin-top:14px"><button class="btn sec small" id="reset">Reiniciar mi progreso</button></div>';
+  bindQuestion(a,'basic',function(r){
+    var before=box(a.code); grade(a.code,r.all); R.n++;
+    if(r.all){R.ok++;R.streak++;if(R.streak>prog.best){prog.best=R.streak;save();}}else R.streak=0;
+    $('#fb').insertAdjacentHTML('beforeend','<p class="small" style="margin:10px 0 0"><b>Caja '+before+' → caja '+box(a.code)+'</b> ('+BOXN[box(a.code)]+')</p><div class="row" style="margin-top:10px"><button class="btn" id="nx">Siguiente cuenta →</button></div>');
+    $('#nx').onclick=function(){R.cur=pickNext(a.code);viewRep();}; $('#nx').focus();
+  });
+  $('#reset').onclick=function(){ if(confirm('¿Seguro que quieres borrar tu progreso del repaso?')){prog={boxes:{},best:0,score:prog.score||0};save();S.rep=null;viewRep();} };
+}
+
+/* ============ MAPA ============ */
+function viewMap(){
+  var h='<div class="rule"><div><b>Balance y gestión</b>Grupos 1 a 5: cuentas de balance. Grupos 6 y 7: cuentas de gestión (pasan por la cuenta de pérdidas y ganancias).</div>'+
+   '<div><b>Deudoras</b>Activo y gastos: su saldo normal está en el Debe.</div><div><b>Acreedoras</b>Pasivo, patrimonio neto e ingresos: su saldo normal está en el Haber.</div>'+
+   '<div><b>⚠ Excepciones</b>(129) Resultado del ejercicio: de balance y de saldo variable. (606) Descuentos sobre compras: del grupo 6, pero acreedora.'+(useExt?' Con la ampliación: 28x (amortización acumulada) y 490 son de activo pero acreedoras; 121 es patrimonio neto pero deudora; 608 y 609 son acreedoras; 706, 708 y 709 son deudoras; 610 es variable.':'')+'</div></div>'+
+   '<p class="small muted" style="margin:0 0 12px">Los grupos 8 y 9 (gastos e ingresos imputados al patrimonio neto) no pasan por la cuenta de pérdidas y ganancias y no se incluyen en este juego.</p>';
+  Object.keys(GROUPS).forEach(function(g){
+    var list=pool().filter(function(a){return String(a.g)===g;});
+    h+='<details'+(g==='2'?' open':'')+'><summary>Grupo '+g+' · '+GROUPS[g]+' <span class="muted small">('+(+g<=5?'balance':'gestión')+', '+list.length+' cuentas)</span></summary><div class="tblw"><table><thead><tr><th>Cuenta</th><th>Nombre</th><th>Subgrupo</th><th>Masa</th><th>Naturaleza</th></tr></thead><tbody>'+
+     list.map(function(a){return '<tr><td class="c">'+a.code+'</td><td>'+a.name+(a.trap?' <span class="badge trapb">⚠</span>':'')+extb(a)+'</td><td>'+a.sg+' · '+SUBS[a.sg]+'</td><td>'+badge(a)+'</td><td>'+NAT[a.nat].l+'</td></tr>';}).join('')+'</tbody></table></div></details>';
+  });
+  main.innerHTML=h;
+}
+
+render();
+})();
+</script>
+</body>
+</html>
